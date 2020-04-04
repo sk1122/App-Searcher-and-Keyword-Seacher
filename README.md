@@ -1,7 +1,12 @@
 # Scraper
 
 It Searches for Apps on Google Play Store and Apple App Store, also It Searches for
-Keywords in given URL and also Suggests some Recommended Keywords
+Keywords in given URL and also Suggests some Recommended Keywords.
+
+It uses Django as a Backend Framework and Website Scraping is done using Requests
+Library and BeautifulSoup Library.
+
+It uses Ajax and JQuery for Making POST Request to Server
 
 
 ## Usage
