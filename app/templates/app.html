@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}App Searcher{% endblock title %}
+
+{% block content %}
+<header>
+    <h1>App Searcher</h1>
+
+    <div class="inline-block relative w-64 div">
+      <select id="appstore" class="block appearance-none w-full bg-white border border-gray-400 hover:border-gray-500 px-4 py-2 pr-8 rounded shadow leading-tight focus:outline-none focus:shadow-outline">
+        <option>Select App Store</option>
+        <option value="0">Google Play Store</option>
+        <option value="1">Apple App Store</option>
+      </select>
+      <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+        <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
+      </div>
+    </div>
+
+    <form id="forms" action="/app/ajax" method="POST" class="w-full max-w-sm form div">
+        {% csrf_token %}
+      <div class="flex items-center border-b border-b-2 border-teal-500 py-2">
+        {{ form.as_p }}
+        <input type="submit" id="googleSubmit" value="Search" class="flex-shrink-0 bg-teal-500 hover:bg-teal-700 border-teal-500 hover:border-teal-700 text-sm border-4 text-white py-1 px-2 rounded">
+      </div>
+    </form>
+
+    <form id="formsApp" action="/app/ajax/apple" method="POST" class="formsApp w-full max-w-sm div">
+        {% csrf_token %}
+      <div class="flex items-center border-b border-b-2 border-teal-500 py-2">
+        {{ form1.as_p }}
+        <input type="submit" id="appleSubmit" value="Search" class="flex-shrink-0 bg-teal-500 hover:bg-teal-700 border-teal-500 hover:border-teal-700 text-sm border-4 text-white py-1 px-2 rounded">
+      </div>
+    </form>
+
+    {% if data %}
+        {% for d in data %}
+        <div id="divs">
+            <div class="max-w-sm w-full lg:max-w-full lg:flex div">
+                    <!-- App logo -->
+                  <div class="h-48 lg:h-auto lg:w-48 flex-none bg-cover rounded-t lg:rounded-t-none lg:rounded-l text-center overflow-hidden" style="background-image: url('{{ d.image }}')" title="Woman holding a mug">
+                  </div>
+                  <div class="border-r border-b border-l border-gray-400 lg:border-l-0 lg:border-t lg:border-gray-400 bg-white rounded-b lg:rounded-b-none lg:rounded-r p-4 flex flex-col justify-between leading-normal">
+                    <div class="mb-8">
+                      <div class="text-gray-900 font-bold text-xl mb-2">{{ d.app_name }}</div>
+                      <p class="text-gray-700 text-base">{{ d.description }}</p>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="text-sm">
+                        <p class="text-gray-900 leading-none">{{ d.developer }}</p>
+                        <p class="text-gray-600">Downloads: {{ d.downloads }}</p>
+                        <p class="text-gray-600">Ratings: {{ d.ratings }} Stars, Reviews: {{ d.reviews }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Apple -->
+    {% if data1 %}
+        {% for d in data1 %}
+        <div id="divs">
+            <div class="max-w-sm w-full lg:max-w-full lg:flex div">
+                    <!-- App logo -->
+                  <div class="h-48 lg:h-auto lg:w-48 flex-none bg-cover rounded-t lg:rounded-t-none lg:rounded-l text-center overflow-hidden" style="background-image: url('{{ d.image }}')" title="Woman holding a mug">
+                  </div>
+                  <div class="border-r border-b border-l border-gray-400 lg:border-l-0 lg:border-t lg:border-gray-400 bg-white rounded-b lg:rounded-b-none lg:rounded-r p-4 flex flex-col justify-between leading-normal">
+                    <div class="mb-8">
+                      <div class="text-gray-900 font-bold text-xl mb-2">{{ d.app_name }}</div>
+                      <p class="text-gray-700 text-base">{{ d.description }}</p>
+                    </div>
+                    <div class="flex items-center">
+                      <div class="text-sm">
+                        <p class="text-gray-900 leading-none">{{ d.developer }}</p>
+                        <p class="text-gray-600">Downloads: {{ d.downloads }}</p>
+                        <p class="text-gray-600">Ratings: {{ d.ratings }} Stars, Reviews: {{ d.reviews }}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+</header>
+
+{% endblock content %}
+
+{% block js %}
+
+<script type="text/javascript">
+    $("#forms").submit(function(e) {
+        e.preventDefault();
+        $("#googleSubmit").attr("disabled", true);
+        var serializedData = $(this).serialize();
+
+        $.ajax({
+            method: 'POST',
+            url: '{% url 'app:ajax' %}',
+            data: serializedData,
+            success: function(response) {
+                console.log(response)
+                $("#forms").trigger('reset');
+                $("#googleSubmit").attr("disabled", false);
+                var instance = JSON.parse(response["app"]);
+                var fields = instance[0]["fields"];
+                $("#divs").prepend(
+                    `<div class="max-w-sm w-full lg:max-w-full lg:flex div">
+                        <!-- App logo -->
+                      <div class="h-48 lg:h-auto lg:w-48 flex-none bg-cover rounded-t lg:rounded-t-none lg:rounded-l text-center overflow-hidden" style="background-image: url('${fields["image"]||""}')" title="${fields["image"]||""}">
+                      </div>
+                      <div class="border-r border-b border-l border-gray-400 lg:border-l-0 lg:border-t lg:border-gray-400 bg-white rounded-b lg:rounded-b-none lg:rounded-r p-4 flex flex-col justify-between leading-normal">
+                        <div class="mb-8">
+                          <div class="text-gray-900 font-bold text-xl mb-2">${fields["app_name"]||""}</div>
+                          <p class="text-gray-700 text-base">${fields["description"]||""}</p>
+                        </div>
+                        <div class="flex items-center">
+                          <div class="text-sm">
+                            <p class="text-gray-900 leading-none">${fields["developer"]||""}</p>
+                            <p class="text-gray-600">Downloads: ${fields["downloads"]||""}</p>
+                            <p class="text-gray-600">Ratings: ${fields["ratings"]||""} Stars, Reviews: ${fields["reviews"]||""}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>`
+                )
+            },
+            statusCode: {
+                401: function () {
+                    alert("Your session has been expired");
+                    $("#form").trigger('reset');
+                },
+                400: function() {
+                  alert("Start with com.");
+                  $("#form").trigger('reset');
+                },
+                500: () => {
+                  alert("Server Problem");
+                  $("#form").trigger('reset');
+                }
+            }
+        })
+    })
+</script>
+
+<script type="text/javascript">
+  $("#formsApp").submit(function(e) {
+        e.preventDefault();
+        $("#appleSubmit").attr("disabled", true);
+        var serializedData = $(this).serialize();
+
+        $.ajax({
+            method: 'POST',
+            url: '{% url 'app:apple' %}',
+            data: serializedData,
+            success: function(response) {
+                $("#forms").trigger('reset');
+                $("#appleSubmit").attr("disabled", false);
+                var instance = JSON.parse(response["app"]);
+                var fields = instance[0]["fields"];
+                $("#divs").prepend(
+                    `<div class="max-w-sm w-full lg:max-w-full lg:flex div">
+                <!-- App logo -->
+              <div class="h-48 lg:h-auto lg:w-48 flex-none bg-cover rounded-t lg:rounded-t-none lg:rounded-l text-center overflow-hidden" style="background-image: url('${fields["image"]||""}')" title="Woman holding a mug">
+              </div>
+              <div class="border-r border-b border-l border-gray-400 lg:border-l-0 lg:border-t lg:border-gray-400 bg-white rounded-b lg:rounded-b-none lg:rounded-r p-4 flex flex-col justify-between leading-normal">
+                <div class="mb-8">
+                  <div class="text-gray-900 font-bold text-xl mb-2">${fields["app_name"]||""}</div>
+                  <p class="text-gray-700 text-base">${fields["description"]||""}</p>
+                </div>
+                <div class="flex items-center">
+                  <div class="text-sm">
+                    <p class="text-gray-900 leading-none">${fields["developer"]||""}</p>
+                    <p class="text-gray-600">Downloads: </p>
+                    <p class="text-gray-600">Ratings: ${fields["ratings"]||""} Stars, Reviews: ${fields["reviews"]||""}</p>
+                  </div>
+                </div>
+              </div>
+            </div>`
+                )
+            },
+            statusCode: {
+                401: function () {
+                    alert("Your session has been expired");
+                    $("#form").trigger('reset');
+                },
+                400: function() {
+                  alert("Data Not Found");
+                  $("#form").trigger('reset');
+                },
+                500: () => {
+                  alert("Server Problem");
+                  $("#form").trigger('reset');
+                }
+            }
+        })
+    })
+</script>
+{% endblock js %}

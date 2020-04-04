@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+
+{% block title %}Keyword Finder{% endblock %}
+
+{% block content %}
+
+<form id="form" class="w-full max-w-sm" method="POST" action="/ajax/">
+    {% csrf_token %}
+  <div class="flex items-center border-b border-b-2 border-teal-500 py-2">
+    {{ form.as_p }}
+    <input type="submit" class="flex-shrink-0 bg-teal-500 hover:bg-teal-700 border-teal-500 hover:border-teal-700 text-sm border-4 text-white py-1 px-2 rounded">
+  </div>
+</form>
+
+{% if data %}
+{% for d in data %}
+<div id="divs" class="max-w-sm rounded overflow-hidden shadow-lg">
+  <div class="px-6 py-4">
+    <div class="font-bold text-xl mb-2">{{ d.url }}</div>
+    <p class="text-gray-700 text-base" style="display: inline-block; width:350px;">
+      {{ d.keyword }}
+    </p>
+  </div>
+  <div class="px-6 py-4">
+  </div>
+</div>
+{% endfor %}
+{% endif %}
+
+<button id="modalbutton" class="modal-open bg-transparent border border-gray-500 hover:border-indigo-500 text-gray-500 hover:text-indigo-500 font-bold py-2 px-4 rounded-full" style="display: none;">Open Modal</button>
+<div id="modal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center">
+    <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-50"></div>
+
+    <div class="modal-container bg-white w-11/12 md:max-w-md mx-auto rounded shadow-lg z-50 overflow-y-auto">
+
+      <div class="modal-close absolute top-0 right-0 cursor-pointer flex flex-col items-center mt-4 mr-4 text-white text-sm z-50">
+        <svg class="fill-current text-white" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+          <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+        </svg>
+        <span class="text-sm">(Esc)</span>
+      </div>
+
+      <!-- Add margin if you want to see some of the overlay behind the modal-->
+      <div class="modal-content py-4 text-left px-6">
+        <!--Title-->
+        <div class="flex justify-between items-center pb-3">
+          <p class="text-2xl font-bold" id="modal-title"></p>
+          <div class="modal-close cursor-pointer z-50">
+            <svg class="fill-current text-black" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 18 18">
+              <path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"></path>
+            </svg>
+          </div>
+        </div>
+
+        <!--Body-->
+        <div id="modal-body"></div>
+        <div id="rec_keyword"></div>
+        <!--Footer-->
+        <div class="flex justify-end pt-2">
+          <button class="px-4 bg-transparent p-3 rounded-lg text-indigo-500 hover:bg-gray-100 hover:text-indigo-400 mr-2">Action</button>
+          <button class="modal-close px-4 bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400">Close</button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+{% block js %}
+
+<script type="text/javascript">
+    $("#form").submit(function(e) {
+        e.preventDefault();
+        var serializedData = $(this).serialize();
+
+        $.ajax({
+            method: 'POST',
+            url: "{% url 'app:ajax_keyword' %}",
+            data: serializedData,
+            success: function(response) {
+                $("#form").trigger('reset');
+
+                var instance = JSON.parse(response["keyword"]);
+                var fields = instance[0]["fields"];
+                $("#modal-title").append(
+                  `
+                    <p>${fields["url"]||""}</p>
+                  `
+                  )
+                $("#modal-body").append(
+                    `
+                      <p>${fields["keyword"]||""}</p>
+                    `
+                  )
+                $('#rec_keyword').append(
+                  `
+                    <p>R: ${fields["rec_keyword"]||""}</p>
+                  `
+                )
+                $('#modalbutton').click();
+            },
+            statusCode: {
+                401: function () {
+                    alert("Your session has been expired");
+                    $("#form").trigger('reset');
+                },
+                400: function() {
+                  alert("Data Not Found");
+                  $("#form").trigger('reset');
+                },
+                500: () => {
+                  alert("Server Problem");
+                  $("#form").trigger('reset');
+                }
+            }
+        })
+    })
+</script>
+
+ <script>
+    var openmodal = document.querySelectorAll('.modal-open')
+    for (var i = 0; i < openmodal.length; i++) {
+      openmodal[i].addEventListener('click', function(event){
+      event.preventDefault()
+      toggleModal()
+      })
+    }
+
+    const overlay = document.querySelector('.modal-overlay')
+    overlay.addEventListener('click', toggleModal)
+
+    var closemodal = document.querySelectorAll('.modal-close')
+    for (var i = 0; i < closemodal.length; i++) {
+      closemodal[i].addEventListener('click', toggleModal);
+
+
+    }
+
+
+
+    document.onkeydown = function(evt) {
+      evt = evt || window.event
+      var isEscape = false
+      if ("key" in evt) {
+      isEscape = (evt.key === "Escape" || evt.key === "Esc")
+      } else {
+      isEscape = (evt.keyCode === 27)
+      }
+      if (isEscape && document.body.classList.contains('modal-active')) {
+      toggleModal()
+      }
+    };
+
+
+    function toggleModal () {
+      const body = document.querySelector('body')
+      const modal = document.querySelector('.modal')
+      modal.classList.toggle('opacity-0')
+      modal.classList.toggle('pointer-events-none')
+      body.classList.toggle('modal-active')
+      var modal_body = document.getElementById('modal')
+
+      if(modal_body.classList.contains("opacity-0")) {
+        document.getElementById('modal-title').innerHTML = ""
+        document.getElementById('modal-body').innerHTML = ""
+        document.getElementById('rec_keyword').innerHTML = ""
+      }
+    }
+
+
+
+
+  </script>
+
+{% endblock %}
